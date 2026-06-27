@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String ,Enum 
+from sqlalchemy import Column, Integer, String ,Enum,ForeignKey 
 
 from database import Base , engine ,SessionLocal
 from sqlalchemy.orm import declarative_base ,relationship
