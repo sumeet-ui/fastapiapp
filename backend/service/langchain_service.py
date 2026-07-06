@@ -8,9 +8,11 @@ from langchain_core.runnables import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 
 # Load .env
-env_path = Path(__file__).resolve().parent.parent / ".env"
+env_path = Path(__file__).resolve().parent.parent /".env"
 load_dotenv(dotenv_path=env_path)
 
+print("ENV PATH:", env_path)
+print("API Key:", os.getenv("GROQ_API_KEY"))
 # LLM
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
@@ -49,14 +51,31 @@ class LangChainService:
 
     def chat_without_memory(self, message: str):
         return llm.invoke(message).content
+from fastapi import HTTPException
+from groq import AuthenticationError
+
+class LangChainService:
+
+    def chat_without_memory(self, message: str):
+        return llm.invoke(message).content
 
     def chat_with_memory(self, message: str, session_id: str):
-        response = chat.invoke(
-            {"user_query": message},
-            config={"configurable": {"session_id": session_id}},
-        )
-        return response.content
+        try:
+            response = chat.invoke(
+                {"user_query": message},
+                config={"configurable": {"session_id": session_id}},
+            )
+            return response.content
 
+        except AuthenticationError:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid Groq API Key"
+            )
+
+    def clear_history(self, session_id: str):
+        if session_id in store:
+            del store[session_id]
     def clear_history(self, session_id: str):
         if session_id in store:
             del store[session_id]
