@@ -13,4 +13,4 @@ class Company(Base):
     phone = Column(String, unique=True)
     location = Column(String)
 
-    jobs = relationship("Job", back_populates="company")
+    jobs = relationship("Job", back_populates="company", lazy="selectin")

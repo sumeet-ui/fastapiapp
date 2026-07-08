@@ -1,19 +1,32 @@
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from utils.token import verify_access_token
-from fastapi import HTTPException
+from models.users import User
 from database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-def get_current_user(token: str=Depends(oauth2_scheme),db:Session =Depends(get_db)):
 
-    token_data = verify_access_token(token)
-    if token_data is None:
-        raise HTTPException(status_code=401, detail="Invalid Credentials")
-    return token_data
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db)
+):
+    user_info = verify_access_token(token)
 
+    result = await db.execute(
+        select(User).filter(User.id == int(user_info["sub"]))
+    )
+
+    current_user = result.scalars().first()
+
+    if current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
+
+    return current_user
 
 def role_required(roles:list):
     def role_decorator(current_user=Depends(get_current_user)):

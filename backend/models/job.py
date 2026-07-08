@@ -9,4 +9,4 @@ class Job(Base):
     description = Column(String)
     salary = Column(Integer)
     company_id = Column(Integer, ForeignKey("companies.id"))
-    company = relationship("Company", back_populates="jobs")
+    company = relationship("Company", back_populates="jobs", lazy="selectin")
