@@ -82,3 +82,9 @@ class LangChainService:
 
 
 service = LangChainService()
+
+def llm_response(message: str):
+    return service.chat_without_memory(message)
+
+def ask_career_chatbot_response(message: str, session_id: str = "default"):
+    return service.chat_with_memory(message, session_id)

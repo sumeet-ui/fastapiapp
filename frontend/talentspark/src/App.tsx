@@ -1,118 +1,169 @@
 import NavBar from "./components/NavBar";
-import Welcome from "./components/Welcome";
-import Footer from "./components/Footer";
 import CompanyCard from "./components/CompanyCard";
 import JobCard from "./components/JobCard";
-import {useState,useEffect} from "react";
-import { getCompanies } from "./Services/CompanyServices";
-import { getJobs } from "./Services/JobServices";
-import type { Company } from "./types/company";
-import type { Job } from "./types/job";
+import Footer from "./components/Footer";
+import { useEffect, useState } from "react";
+import { getCompanies, updateCompany, deleteCompany, createCompany } from "./Services/CompanyService";
+import { getJobs, updateJob, deleteJob, createJob } from "./Services/JobService";
+import type { Company } from "./types/company"
+import type { Job } from "./types/job"
+import Login from "./pages/login";
+import Register from "./pages/register";
+import Chat from "./pages/chat";
+import ResumeAnalyser from "./pages/ResumeAnalyzer";
+import JobMatch from "./pages/JobMatch";
+
 
 function App() {
-  const[loading,setLoading]=useState(true);
-  const[error,setError]=useState<Error|null>(null);
-  const[companies,setCompanies]=useState<Company[]>([]);
-  const[jobs,setJobs]=useState<Job[]>([]);
-  const[isLoggedIn,setIsLoggedIn]=useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null)
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+  const [page, setPage] = useState<"login" | "register">("login");
+  const [currentPage, setCurrentPage] = useState("home");
 
-  async function fetchCompanies(){
-    try{
-      const companies=await getCompanies();
-      setCompanies(companies);
-    } catch (err) {
-      setError(err as Error);
-    }
-  }
+  const handleLogin = (newToken: string) => {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+  };
 
-  async function fetchJobs(){
-    try{
-      const jobs=await getJobs();
-      setJobs(jobs);
-    } catch (err) {
-      setError(err as Error);
-    }
-  }
-
-  useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem("access_token");
-    if(token){
-      setIsLoggedIn(true);
-      setLoading(true);
-      Promise.all([fetchCompanies(), fetchJobs()]).finally(() => {
-        setLoading(false);
-      });
-    } else {
-      setIsLoggedIn(false);
+  async function fetchData() {
+    setLoading(true);
+    try {
+      const [companiesData, jobsData] = await Promise.all([
+        getCompanies(),
+        getJobs()
+      ]);
+      setCompanies(companiesData);
+      setJobs(jobsData);
+    } catch (error) {
+      setError(error as Error);
+    } finally {
       setLoading(false);
     }
-  }, []);
-
-  const handleAddCompany = (company: Company) => {
-    setCompanies([...companies, company]);
-  };
-
-  const handleEditCompany = (company: Company) => {
-    setCompanies(companies.map(c => c.id === company.id ? company : c));
-  };
-
-  const handleDeleteCompany = (id: number) => {
-    setCompanies(companies.filter(c => c.id !== id));
-  };
-
-  const handleAddJob = (job: Job) => {
-    setJobs([...jobs, job]);
-  };
-
-  const handleEditJob = (job: Job) => {
-    setJobs(jobs.map(j => j.id === job.id ? job : j));
-  };
-
-  const handleDeleteJob = (id: number) => {
-    setJobs(jobs.filter(j => j.id !== id));
-  };
-
-  if(loading){
-    return <div>Loading...</div>;
   }
 
-  if(!isLoggedIn){
+  async function handleEdit(company: Company) {
+    try {
+      const updatedCompany = await updateCompany(company.id, company);
+      setCompanies(prev =>
+        prev.map(company =>
+          company.id === updatedCompany.id ? updatedCompany : company
+        )
+      );
+    } catch (error) {
+      setError(error as Error);
+    }
+  }
+
+  async function handleDelete(id: number) {
+    try {
+      await deleteCompany(id);
+      setCompanies(prev =>
+        prev.filter(company => company.id !== id)
+      );
+    } catch (error) {
+      setError(error as Error);
+    }
+  }
+
+  async function handleAdd(company: Company) {
+    try {
+      const newCompany = await createCompany(company);
+      setCompanies(prev => [...prev, newCompany]);
+    } catch (error) {
+      setError(error as Error);
+    }
+  }
+
+  async function handleJobEdit(job: Job) {
+    try {
+      const updatedJob = await updateJob(job.id, job);
+      setJobs(prev =>
+        prev.map(j =>
+          j.id === updatedJob.id ? updatedJob : j
+        )
+      );
+    } catch (error) {
+      setError(error as Error);
+    }
+  }
+
+  async function handleJobDelete(id: number) {
+    try {
+      await deleteJob(id);
+      setJobs(prev =>
+        prev.filter(job => job.id !== id)
+      );
+    } catch (error) {
+      setError(error as Error);
+    }
+  }
+
+  async function handleJobAdd(job: Job) {
+    try {
+      const newJob = await createJob(job);
+      setJobs(prev => [...prev, newJob]);
+    } catch (error) {
+      setError(error as Error);
+    }
+  }
+
+
+  useEffect(() => {
+    if (token) {
+      fetchData();
+    }
+  }, [token]);
+
+  if (!token) {
     return (
       <>
-        <NavBar />
-        <Welcome />
-        <div style={{textAlign: 'center', padding: '50px'}}>
-          <h2>Please login to view companies and jobs</h2>
-        </div>
-        <Footer />
+        {page === "login" ? (
+          <Login onLogin={handleLogin} onSwitchToRegister={() => setPage("register")} />
+        ) : (
+          <Register onSwitchToLogin={() => setPage("login")} />
+        )}
       </>
-    );
+    )
   }
 
-  if(error){
-    return <div>Error: {error.message}</div>;
+  if (loading) {
+    return <div>Loading...</div>
   }
 
+  if (error) {
+    return <div>Error: {error.message}</div>
+  }
   return (
     <>
-      <NavBar />
-      <Welcome />
-      <CompanyCard 
-        companies={companies} 
-        onadd={handleAddCompany}
-        onedit={handleEditCompany}
-        ondelete={handleDeleteCompany}
-      />
-      <JobCard 
-        jobs={jobs}
-        onadd={handleAddJob}
-        onedit={handleEditJob}
-        ondelete={handleDeleteJob}
-      />
+      <NavBar currentPage={currentPage} onNavigate={setCurrentPage} />
+      <br />
+      {currentPage === "home" && (
+        <>
+          <CompanyCard
+            companies={companies}
+            jobs={jobs}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onAdd={handleAdd}
+          />
+          <JobCard
+            jobs={jobs}
+            companies={companies}
+            onEdit={handleJobEdit}
+            onDelete={handleJobDelete}
+            onAdd={handleJobAdd}
+          />
+        </>
+      )}
+      {currentPage === "chat" && <Chat />}
+      {currentPage === "resume" && <ResumeAnalyser />}
+      {currentPage === "jobmatch" && <JobMatch />}
       <Footer />
     </>
-  );
+  )
 }
-  
-export default App;
+
+export default App

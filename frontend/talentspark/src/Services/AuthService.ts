@@ -11,11 +11,6 @@ export const login = async (credentials:LoginRequest):Promise<LoginResponse>=>{
     const response = await axios.post<LoginResponse>(`${API_URL}/login`, formData, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" }
     });
-    
-    // Save token to localStorage
-    localStorage.setItem("access_token", response.data.access_token);
-    localStorage.setItem("token_type", response.data.token_type);
-    
     return response.data;
 }
 

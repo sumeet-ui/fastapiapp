@@ -8,11 +8,11 @@ from database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 def get_current_user(token: str=Depends(oauth2_scheme),db:Session =Depends(get_db)):
-    user_info = verify_access_token(token)
-    current_user = verify_access_token(token)
-    if current_user is None:
+
+    token_data = verify_access_token(token)
+    if token_data is None:
         raise HTTPException(status_code=401, detail="Invalid Credentials")
-    return current_user
+    return token_data
 
 
 def role_required(roles:list):

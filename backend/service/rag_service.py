@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
-from services.qdrant_service import search_jobs
+from service.qdrant_service import search_jobs
 load_dotenv()
 
 llm = ChatGroq(
@@ -34,5 +34,5 @@ def rag_job_search(question: str) -> str:
         for r in results
     )
 
-    response = rag_chain.invoke({"context": context, "question": question})
+    response = rag_chain.invoke({"context": context, "user_query": question})
     return response.content

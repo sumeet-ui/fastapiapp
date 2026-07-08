@@ -1,4 +1,4 @@
-from jose import jwt
+from jose import jwt,JWTError
 from datetime import datetime, timedelta
 from schemas.token import Token
 from dotenv import load_dotenv
@@ -21,22 +21,10 @@ def create_access_token(data: dict, expires_delta: timedelta = timedelta(hours=2
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def verify_token(token: str,db: Session = Depends(get_db)):
-    to_decode = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    current_user = db.query(User).filter(User.id == to_decode.get("user_id")).first()
-    if current_user is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials"
-        )
-    return current_user
 
 def verify_access_token(token: str):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-        if user_id is None:
-            return None
-        return {"user_id": user_id}
-    except:
+        decode_token= jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return decode_token
+    except jwt.JWTError:
         return None

@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from schemas.chat import ChatRequest, ChatResponse
-from service.langchain_service import service
-from service.langchai_service import ask_career_chatbot_response
+from service.langchain_service import service, llm_response, ask_career_chatbot_response
 
 router = APIRouter(prefix="/chat",tags=["Chat"])
 
@@ -9,7 +8,6 @@ router = APIRouter(prefix="/chat",tags=["Chat"])
 def chat_ask(request:ChatRequest):
     ans = llm_response(request.message)
     return ChatResponse(response=ans)
-
 
 @router.post("/ask_career",response_model=ChatResponse)
 def ask_career_chatbot(request:ChatRequest):
